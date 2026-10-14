@@ -11,5 +11,6 @@ plugins:
 feed:
   path: blog/feed.xml
 exclude:
+  - cicart-serveur
   - README.md
   - PUBLIER-UN-ARTICLE.md

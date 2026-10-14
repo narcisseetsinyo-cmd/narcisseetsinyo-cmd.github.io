@@ -1,5 +1,5 @@
 /* CIC'ART — service hors ligne. Changez VERSION à chaque mise à jour de l'application. */
-const VERSION = "cicart-fb-v2";
+const VERSION = "cicart-fb-v3";
 const SHELL = [
   "./",
   "./index.html",

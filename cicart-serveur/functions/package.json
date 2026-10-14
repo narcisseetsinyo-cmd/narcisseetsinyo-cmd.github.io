@@ -1,0 +1,11 @@
+{
+  "name": "cicart-serveur",
+  "description": "CIC'ART : paiements Mobile Money (PayGate Global) pour le projet Firebase cicart",
+  "private": true,
+  "main": "index.js",
+  "engines": { "node": "20" },
+  "dependencies": {
+    "firebase-admin": "^12.7.0",
+    "firebase-functions": "^6.1.1"
+  }
+}

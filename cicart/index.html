@@ -272,6 +272,36 @@ body{padding-top:env(safe-area-inset-top,0px);-webkit-tap-highlight-color:transp
 .stack{display:flex;flex-direction:column;gap:16px}
 .offline{position:fixed;top:calc(env(safe-area-inset-top,0px) + 8px);left:50%;transform:translateX(-50%);z-index:85;background:var(--amber);color:#2a1a00;font-weight:700;font-size:13px;padding:6px 14px;border-radius:999px}
 @media (max-width:820px){.steps-l{font-size:9.5px}}
+
+/* --- Mobile Money --- */
+.mm-cta{align-self:flex-start}
+.mm-cta svg{width:18px;height:18px}
+.mm-nets{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.mm-net{all:unset;cursor:pointer;display:flex;flex-direction:column;gap:2px;padding:14px;border-radius:14px;border:1.5px solid var(--line);background:var(--surface)}
+.mm-net b{font-size:16px}
+.mm-net small{color:var(--muted);font-size:12px}
+.mm-net.yas[aria-pressed="true"]{border-color:#f5c400;box-shadow:inset 0 0 0 1px #f5c400;background:rgba(245,196,0,.1)}
+.mm-net.moov[aria-pressed="true"]{border-color:#2f8ef4;box-shadow:inset 0 0 0 1px #2f8ef4;background:rgba(47,142,244,.12)}
+.mm-net:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+.mm-tel{display:flex;align-items:stretch}
+.mm-tel span{display:grid;place-items:center;padding:0 12px;border:1.5px solid var(--line);border-right:0;border-radius:12px 0 0 12px;background:var(--surface);color:var(--muted);font-weight:700}
+.mm-tel .input{border-radius:0 12px 12px 0;font-size:17px;letter-spacing:.04em}
+.mm-pending{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:14px;background:rgba(240,180,76,.1);border:1px solid rgba(240,180,76,.35)}
+.mm-pending b{display:block;color:var(--amber)}
+.mm-pending small{display:block;color:var(--muted);font-size:12.5px}
+.mm-dot{width:10px;height:10px;border-radius:50%;background:var(--amber);flex:none;animation:mmPulse 1.4s ease-in-out infinite}
+@keyframes mmPulse{50%{opacity:.35}}
+.mm-state{text-align:center;display:flex;flex-direction:column;align-items:center;gap:8px;padding:10px 0}
+.mm-state h2{font-size:26px}
+.mm-state p{margin:0;color:var(--muted);max-width:40ch}
+.mm-state p b{color:var(--fg)}
+.mm-ico{width:64px;height:64px;border-radius:50%;display:grid;place-items:center;font-size:30px;font-weight:800}
+.mm-state.ok .mm-ico{background:var(--green-soft);color:var(--green)}
+.mm-state.ko .mm-ico{background:var(--red-soft);color:#ff9b9b}
+.mm-spin{width:56px;height:56px;border-radius:50%;border:4px solid var(--line);border-top-color:var(--blue);animation:mmSpin 1s linear infinite}
+@keyframes mmSpin{to{transform:rotate(360deg)}}
+.mm-steps{text-align:left;margin:10px 0 0;padding-left:20px;color:var(--fg);display:flex;flex-direction:column;gap:6px;font-size:14.5px}
+@media (prefers-reduced-motion:reduce){.mm-dot,.mm-spin{animation:none}}
 </style>
 </head>
 <body>

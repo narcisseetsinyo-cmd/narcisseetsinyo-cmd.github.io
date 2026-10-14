@@ -10,6 +10,7 @@ import {
   initializeFirestore, persistentLocalCache, persistentMultipleTabManager,
   collection, doc, onSnapshot, setDoc, updateDoc, deleteDoc, getDoc, query, where, writeBatch
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-functions.js";
 
 /* ================= Référentiels ================= */
 const I = {
@@ -57,7 +58,7 @@ function toast(msg) { const t = document.createElement("div"); t.className = "to
 /* ================= État ================= */
 const S = {
   authUser: null, profile: null, role: null, ready: false,
-  clients: [], commandes: [], factures: {}, paiements: [], stock: [], users: [], codes: [],
+  clients: [], commandes: [], factures: {}, paiements: [], stock: [], users: [], codes: [], transactions: [],
   config: { nom: "CIC'ART", tel: "", tailleurs: [] }, myClient: null
 };
 let page = null;
@@ -70,6 +71,10 @@ const clientOf = id => S.clients.find(c => c.id === id) || (S.myClient && S.myCl
 const cmdOf = id => S.commandes.find(c => c.id === id);
 const prixOf = c => (S.factures[c.id] ? +S.factures[c.id].prix || 0 : 0);
 const hasPrix = c => !!S.factures[c.id];
+const mmActif = () => !!(S.config.paiementEnLigne && S.config.cleMarchande);
+const MM = { TMONEY: { nom: "Mixx by Yas", sous: "T-Money · Yas", cls: "yas" }, FLOOZ: { nom: "Moov Money", sous: "Flooz · Moov Africa", cls: "moov" } };
+const CALLBACK_URL = "https://europe-west1-" + ((firebaseConfig && firebaseConfig.projectId) || "cicart") + ".cloudfunctions.net/paygateCallback";
+const txEnAttente = cmdId => S.transactions.filter(t => t.commandeId === cmdId && t.statut === "en_attente");
 const paidFor = id => S.paiements.filter(p => p.commandeId === id).reduce((a, p) => a + (+p.montant || 0), 0);
 const resteFor = c => Math.max(0, prixOf(c) - paidFor(c.id));
 const cmdNum = c => "N° " + String(c.num || 0).padStart(3, "0");
@@ -77,7 +82,7 @@ const codeOf = clientId => { const c = S.codes.find(x => x.clientId === clientId
 
 /* ================= Firebase ================= */
 const configured = firebaseConfig && firebaseConfig.apiKey && firebaseConfig.projectId;
-let auth = null, db = null;
+let auth = null, db = null, fns = null;
 let unsubs = [];
 function stopListeners() { unsubs.forEach(u => { try { u(); } catch (e) { } }); unsubs = []; }
 
@@ -92,11 +97,12 @@ if (!configured) {
   } catch (e) {
     db = initializeFirestore(app, {});
   }
+  fns = getFunctions(app, "europe-west1");
   getRedirectResult(auth).catch(err => { ui.authErr = authMsg(err); render(); });
   onAuthStateChanged(auth, async u => {
     stopListeners();
     S.authUser = u; S.profile = null; S.role = null; S.ready = false; S.myClient = null;
-    ["clients", "commandes", "paiements", "stock", "users", "codes"].forEach(k => S[k] = []); S.factures = {};
+    ["clients", "commandes", "paiements", "stock", "users", "codes", "transactions"].forEach(k => S[k] = []); S.factures = {};
     if (!u) { page = null; render(); return; }
     render();
     try { await ensureProfile(u); } catch (e) { console.error(e); }
@@ -160,6 +166,7 @@ function startData() {
     listen(collection(db, "paiements"), s => { S.paiements = rows(s); });
     listen(collection(db, "stock"), s => { S.stock = rows(s); });
     listen(collection(db, "users"), s => { S.users = rows(s); });
+    listen(query(collection(db, "transactions"), where("statut", "==", "en_attente")), s => { S.transactions = rows(s); });
   }
   if (S.role === "client") {
     const cid = S.profile && S.profile.clientId;
@@ -168,6 +175,7 @@ function startData() {
     listen(query(collection(db, "commandes"), where("clientId", "==", cid)), s => { S.commandes = rows(s); });
     listen(query(collection(db, "factures"), where("clientId", "==", cid)), s => { const m = {}; s.docs.forEach(d => m[d.id] = d.data()); S.factures = m; });
     listen(query(collection(db, "paiements"), where("clientId", "==", cid)), s => { S.paiements = rows(s); });
+    listen(query(collection(db, "transactions"), where("clientId", "==", cid)), s => { S.transactions = rows(s); });
   }
   setTimeout(() => { if (!S.ready) { S.ready = true; render(); } }, 4000);
 }
@@ -402,6 +410,7 @@ function vPaiements() {
   <button class="btn" data-act="newPay">${I.plus}Enregistrer un paiement</button></div>
   <div class="kpis"><div class="kpi hero"><span>Total ${ui.mois ? ml(ui.mois) : "toutes périodes"}</span><strong>${F(tot)}</strong><small>${list.length} paiement${list.length > 1 ? "s" : ""}</small></div>
   ${parMode.slice(0, 3).map(([m, v]) => `<div class="kpi"><span>${esc(m.split(" (")[0])}</span><strong>${F(v)}</strong><small>${tot ? Math.round(v / tot * 100) : 0} % du total</small></div>`).join("")}</div>
+  ${S.transactions.length ? `<section class="panel" style="margin-bottom:18px"><div class="panel-head"><h3>Mobile Money en attente de validation</h3></div><div class="stack" style="gap:10px">${S.transactions.map(t => { const cl = clientOf(t.clientId); return `<div class="mm-pending"><span class="mm-dot"></span><div style="min-width:0;flex:1"><b>${F(t.montant)} · ${esc(cl ? cl.nom : "—")}</b><small>N° ${String(t.num || 0).padStart(3, "0")} · ${esc((MM[t.reseau] || {}).nom || "")} · ${esc(fmtTel(t.telephone))}</small></div><button class="btn sm ghost" data-act="mmVerify" data-id="${t.id}">Vérifier</button></div>`; }).join("")}</div></section>` : ""}
   <div class="chips" style="margin-bottom:18px"><button class="chip" data-mois="" aria-pressed="${!ui.mois}">Tout</button>${months.map(m => `<button class="chip" data-mois="${m}" aria-pressed="${ui.mois === m}">${ml(m)}</button>`).join("")}</div>
   ${list.length ? `<div class="table-wrap"><table><thead><tr><th>Date</th><th>Client</th><th>Commande</th><th>Mode</th><th>Note</th><th class="r">Montant</th></tr></thead><tbody>${list.map(p => {
     const c = cmdOf(p.commandeId), cl = clientOf(p.clientId || (c && c.clientId));
@@ -449,7 +458,7 @@ function vReglages() {
   <div class="panel-head" style="margin-top:22px"><h3>Importer une sauvegarde</h3></div>
   <p class="muted" style="margin-top:0">Reprenez les données d'une sauvegarde faite avec la version hors ligne de CIC'ART. Les fiches sont ajoutées à celles déjà présentes.</p>
   <button class="btn ghost" data-act="importPick">Choisir un fichier de sauvegarde</button><input type="file" id="importFile" accept="application/json,.json" hidden>
-  </section></div>`;
+  </section>${mmReglages()}</div>`;
 }
 
 function vCompte() {
@@ -487,8 +496,16 @@ function orderCard(c) {
   <div class="steps-l" style="margin-top:6px">${STATUTS.map((s, i) => `<span class="${i === idx ? "on" : ""}">${s[1]}</span>`).join("")}</div></div>
   <p style="margin:0">${esc(msg)}</p>
   ${has ? `<div class="money-box"><div><small>Prix</small><b>${F(prix)}</b></div><div><small>Payé</small><b style="color:var(--green)">${F(paid)}</b></div><div><small>Reste</small><b style="color:${r > 0 ? "#ff9b9b" : "var(--green)"}">${r > 0 ? F(r) : "Soldé"}</b></div></div>` : ""}
+  ${pendingBox(c)}
+  ${mmActif() && has && r > 0 && !txEnAttente(c.id).length ? `<button class="btn green mm-cta" data-act="mmPay" data-id="${c.id}">${I.pay}Payer par Mobile Money</button>` : ""}
   ${c.tissu ? `<span class="muted" style="font-size:13.5px">Tissu : ${esc(c.tissu)}</span>` : ""}</section>`;
 }
+function pendingBox(c) {
+  const ts = txEnAttente(c.id);
+  if (!ts.length) return "";
+  return ts.map(t => `<div class="mm-pending"><span class="mm-dot"></span><div style="min-width:0;flex:1"><b>Paiement de ${F(t.montant)} en attente</b><small>${esc((MM[t.reseau] || {}).nom || "")} · ${esc(fmtTel(t.telephone))} · validez la demande sur ce téléphone</small></div><button class="btn sm ghost" data-act="mmVerify" data-id="${t.id}">Vérifier</button></div>`).join("");
+}
+const fmtTel = t => String(t || "").replace(/(\d{2})(?=\d)/g, "$1 ").trim();
 function vMesMes() {
   const cl = S.myClient, m = cl && cl.mesures || {};
   const filled = MESURES.filter(([k]) => m[k] !== undefined && m[k] !== "");
@@ -498,7 +515,7 @@ function vMesMes() {
 
 /* ================= Fenêtres ================= */
 function openSheet(html) { $("#layer").innerHTML = `<div class="overlay" id="ov"><div class="sheet" role="dialog" aria-modal="true">${html}</div></div>`; }
-function closeSheet() { $("#layer").innerHTML = ""; armed = null; }
+function closeSheet() { $("#layer").innerHTML = ""; armed = null; if (txWatch) { try { txWatch(); } catch (e) { } txWatch = null; } }
 const closeBtn = '<button class="icon-btn" data-act="close" aria-label="Fermer">×</button>';
 const opt = (arr, sel) => arr.map(v => { const [val, lab] = Array.isArray(v) ? v : [v, v]; return `<option value="${esc(val)}" ${val === sel ? "selected" : ""}>${esc(lab)}</option>`; }).join("");
 
@@ -511,7 +528,8 @@ function sheetCmd(id) {
   ${isAdmin() ? (hasPrix(c) ? `<div class="money-box"><div><small>Prix</small><b>${F(prixOf(c))}</b></div><div><small>Payé</small><b style="color:var(--green)">${F(paid)}</b></div><div><small>Reste</small><b style="color:${r > 0 ? "#ff9b9b" : "var(--green)"}">${F(r)}</b></div></div>` : `<div class="banner"><p>Le prix de cette commande n'est pas encore fixé.</p><button class="btn sm" data-act="editCmd" data-id="${c.id}">Fixer le prix</button></div>`) : ""}
   <dl class="kv"><dt>Description</dt><dd>${esc(c.description || "—")}</dd><dt>Tissu</dt><dd>${esc(c.tissu || "—")} ${c.tissuFourni ? "(apporté par le client)" : "(fourni par l'atelier)"}</dd><dt>Dépôt</dt><dd class="num">${fmtD(c.depot)}</dd><dt>Livraison</dt><dd class="num">${fmtD(c.livraison)}</dd><dt>Tailleur</dt><dd>${esc(c.tailleur || "—")}</dd>${c.notes ? `<dt>Notes</dt><dd>${esc(c.notes)}</dd>` : ""}</dl>
   ${isAdmin() ? `<div><h3 style="margin-bottom:8px">Paiements</h3>${pays.length ? `<div class="rows">${pays.map(p => `<div class="row" data-open-pay="${p.id}"><div class="avatar" style="color:var(--green);background:var(--green-soft)">F</div><div class="who"><b class="num">${F(p.montant)}</b><small>${fmtD(p.date)} · ${esc(p.mode)}${p.note ? " · " + esc(p.note) : ""}</small></div><span></span></div>`).join("")}</div>` : '<p class="muted" style="margin:0">Aucun paiement reçu.</p>'}</div>` : ""}
-  <div class="actions">${isAdmin() && hasPrix(c) && r > 0 ? `<button class="btn green" data-act="newPay" data-cmd="${c.id}">Encaisser</button>` : ""}<button class="btn ghost" data-act="msg" data-id="${c.id}">Message au client</button><button class="btn ghost" data-act="editCmd" data-id="${c.id}">Modifier</button>${cl ? `<button class="btn ghost" data-open-client="${cl.id}">Fiche client</button>` : ""}</div>
+  ${isAdmin() ? pendingBox(c) : ""}
+  <div class="actions">${isAdmin() && hasPrix(c) && r > 0 ? `<button class="btn green" data-act="newPay" data-cmd="${c.id}">Encaisser</button>` : ""}${isAdmin() && mmActif() && hasPrix(c) && r > 0 ? `<button class="btn ghost" data-act="mmPay" data-id="${c.id}">Demander par Mobile Money</button>` : ""}<button class="btn ghost" data-act="msg" data-id="${c.id}">Message au client</button><button class="btn ghost" data-act="editCmd" data-id="${c.id}">Modifier</button>${cl ? `<button class="btn ghost" data-open-client="${cl.id}">Fiche client</button>` : ""}</div>
   <div id="msgOut"></div>`);
 }
 function formCmd(id, presetClient) {
@@ -611,6 +629,82 @@ function copyBox(target, title, txt) {
   $(target).innerHTML = `<h3 style="margin:6px 0 8px">${esc(title)}</h3><div class="copybox" id="copyTxt">${esc(txt)}</div><div class="actions" style="margin-top:10px"><button class="btn sm" data-act="copy">Copier le message</button><a class="btn sm ghost" href="https://wa.me/?text=${encodeURIComponent(txt)}" target="_blank" rel="noopener">Envoyer par WhatsApp</a></div>`;
 }
 
+/* ================= Mobile Money ================= */
+let txWatch = null;
+function fnErr(e) {
+  const c = (e && e.code || "").replace("functions/", "");
+  if (c === "unavailable" || c === "internal" && !navigator.onLine) return "Pas de connexion Internet. Réessayez une fois connecté.";
+  if (c === "not-found" && /function/i.test(e.message || "")) return "Le service de paiement n'est pas encore installé.";
+  return (e && e.message && !/^internal$/i.test(e.message)) ? e.message : "Le paiement n'a pas pu être lancé. Réessayez.";
+}
+function devinerReseau(tel) {
+  const n = String(tel || "").replace(/\D/g, "").replace(/^228/, "");
+  if (/^(9[0-3]|7[0-3])/.test(n)) return "TMONEY";
+  if (/^(9[6-9]|79)/.test(n)) return "FLOOZ";
+  return "";
+}
+function sheetMM(cmdId) {
+  const c = cmdOf(cmdId); if (!c) return;
+  const cl = clientOf(c.clientId), r = resteFor(c);
+  const tel = (cl && cl.tel || "").replace(/\D/g, "").replace(/^228/, "").slice(-8);
+  const net = devinerReseau(tel);
+  openSheet(`<div class="sheet-head"><div><div class="eyebrow">${cmdNum(c)} · ${esc(c.modele)}</div><h2 style="margin-top:8px">Payer par Mobile Money</h2><span class="muted">Reste à payer : <b style="color:var(--fg)">${F(r)}</b></span></div>${closeBtn}</div>
+  <form id="fMM" class="stack" data-cmd="${c.id}" data-net="${net}">
+    <div class="field"><label>Réseau</label><div class="mm-nets">${Object.entries(MM).map(([k, m]) => `<button type="button" class="mm-net ${m.cls}" data-act="mmNet" data-net="${k}" aria-pressed="${k === net}"><b>${m.nom}</b><small>${m.sous}</small></button>`).join("")}</div></div>
+    <div class="field"><label for="mmTel">Numéro qui va payer</label><div class="mm-tel"><span>+228</span><input class="input num" id="mmTel" type="tel" inputmode="numeric" autocomplete="tel-national" placeholder="90 12 34 56" value="${esc(fmtTel(tel))}" required></div></div>
+    <div class="field"><label for="mmMt">Montant (F CFA)</label><input class="input num" id="mmMt" type="number" inputmode="numeric" min="100" max="${r}" step="1" value="${r}" required><small class="muted">Vous pouvez payer le tout ou seulement une partie (acompte).</small></div>
+    <p class="err" id="mmErr" aria-live="polite"></p>
+    <button class="btn block" type="submit">Envoyer la demande de paiement</button>
+    <p class="muted" style="font-size:13px;margin:0">Une demande de confirmation arrive sur ce téléphone. Le paiement n'est prélevé qu'après validation avec le code secret Mobile Money. Paiement sécurisé par PayGate Global.</p>
+  </form>`);
+}
+function sheetMMWait(id, info) {
+  const m = MM[info.reseau] || {};
+  const draw = (t) => {
+    const st = t ? t.statut : "en_attente";
+    const box = $("#mmWait"); if (!box) return;
+    if (st === "paye") {
+      box.innerHTML = `<div class="mm-state ok"><div class="mm-ico">✓</div><h2>Paiement reçu</h2><p>${F(t.montantPaye || info.montant)} payés avec ${esc(m.nom || "")}. Merci !</p></div><button class="btn block" data-act="close">Terminer</button>`;
+      if (txWatch) { txWatch(); txWatch = null; }
+    } else if (st === "echoue") {
+      box.innerHTML = `<div class="mm-state ko"><div class="mm-ico">!</div><h2>Paiement non effectué</h2><p>${esc(t && t.erreur || "Le paiement n'a pas été validé.")}</p></div><div class="actions"><button class="btn" data-act="mmPay" data-id="${t ? t.commandeId : ""}">Réessayer</button><button class="btn ghost" data-act="close">Fermer</button></div>`;
+      if (txWatch) { txWatch(); txWatch = null; }
+    } else {
+      box.innerHTML = `<div class="mm-state wait"><div class="mm-spin" aria-hidden="true"></div><h2>Validez sur le téléphone</h2><p>Une demande de <b>${F(info.montant)}</b> a été envoyée au <b>+228 ${esc(fmtTel(info.telephone))}</b> (${esc(m.nom || "")}).</p>
+      <ol class="mm-steps"><li>Ouvrez la notification ou le message reçu sur ce téléphone.</li><li>Vérifiez le montant et saisissez votre <b>code secret ${esc(m.nom || "Mobile Money")}</b>.</li><li>Cet écran se met à jour tout seul dès que le paiement est validé.</li></ol></div>
+      <div class="actions"><button class="btn ghost" data-act="mmVerify" data-id="${id}">J'ai validé, vérifier</button><button class="btn ghost" data-act="close">Fermer</button></div>
+      <p class="muted" style="font-size:13px;margin:0">Rien reçu après une minute ? Consultez les paiements en attente dans le menu de votre opérateur, ou fermez et réessayez.</p>`;
+    }
+  };
+  openSheet(`<div class="sheet-head"><div><div class="eyebrow">Mobile Money</div></div>${closeBtn}</div><div id="mmWait" class="stack"></div>`);
+  draw(null);
+  if (txWatch) { try { txWatch(); } catch (e) { } }
+  txWatch = onSnapshot(doc(db, "transactions", id), s => { if (s.exists()) draw(Object.assign({ id: s.id }, s.data())); }, () => { });
+}
+function mmReglages() {
+  if (!isAdmin()) return "";
+  const c = S.config, on = mmActif();
+  return `<section class="panel span-12"><div class="panel-head"><h3>Paiement Mobile Money</h3><span class="pill ${on ? "s-pret" : "s-attente"}">${on ? "Activé" : c.cleMarchande ? "Prêt, désactivé" : "Non configuré"}</span></div>
+  <p class="muted" style="margin-top:0">Vos clients paient leurs commandes avec <b style="color:var(--fg)">Mixx by Yas</b> ou <b style="color:var(--fg)">Moov Money</b> depuis l'application, via votre compte marchand <b style="color:var(--fg)">PayGate Global</b>. Chaque paiement validé s'enregistre automatiquement dans vos paiements.</p>
+  <div class="grid-dash" style="gap:16px">
+    <div class="span-6 stack" style="gap:12px">
+      <div><b>1. Clé marchande PayGate</b><p class="muted" style="margin:4px 0 0;font-size:14px">À copier depuis votre tableau de bord PayGate. Elle est gardée sur le serveur et n'est jamais visible dans l'application.</p></div>
+      <form id="fKey" class="stack" style="gap:10px"><input class="input" id="mmKey" type="password" autocomplete="off" placeholder="${c.cleMarchande ? "Clé enregistrée · coller une nouvelle clé pour la remplacer" : "Collez la clé (auth_token)"}">
+      <div class="actions"><button class="btn sm" type="submit">Enregistrer la clé</button>${c.cleMarchande ? `<button class="btn sm danger" type="button" data-act="mmKeyDel">Supprimer la clé</button>` : ""}</div></form>
+    </div>
+    <div class="span-6 stack" style="gap:12px">
+      <div><b>2. Adresse de notification</b><p class="muted" style="margin:4px 0 0;font-size:14px">À coller dans PayGate, champ « URL de retour » ou « callback ».</p></div>
+      <div class="copybox" id="cbUrl" style="user-select:all;overflow-wrap:anywhere">${CALLBACK_URL}</div>
+      <div class="actions"><button class="btn sm ghost" data-act="copyCb">Copier l'adresse</button></div>
+    </div>
+  </div>
+  <div class="actions" style="margin-top:16px"><button class="btn ${on ? "danger" : "green"}" data-act="mmToggle">${on ? "Désactiver le paiement pour les clients" : "3. Activer le paiement pour les clients"}</button></div>
+  </section>`;
+}
+document.addEventListener("input", e => {
+  if (e.target.id === "mmTel") { const f = $("#fMM"); if (f && !f.dataset.manual) { const n = devinerReseau(e.target.value); if (n) { f.dataset.net = n; f.querySelectorAll("[data-net]").forEach(b => b.setAttribute("aria-pressed", b.dataset.net === n)); } } }
+});
+
 /* ================= Installation ================= */
 let deferredPrompt = null;
 function isStandalone() { try { return window.matchMedia("(display-mode: standalone)").matches || navigator.standalone === true; } catch (e) { return false; } }
@@ -688,6 +782,21 @@ document.addEventListener("click", async e => {
     case "importPick": $("#importFile").click(); break;
     case "importGo": await doImport(); break;
     case "install": if (deferredPrompt) { deferredPrompt.prompt(); try { await deferredPrompt.userChoice; } catch (err) { } deferredPrompt = null; render(); } break;
+    case "mmPay": sheetMM(id); break;
+    case "mmNet": { const f = $("#fMM"); if (f) { f.dataset.net = a.dataset.net; f.dataset.manual = "1"; f.querySelectorAll("[data-net]").forEach(b => b.setAttribute("aria-pressed", b.dataset.net === a.dataset.net)); } break; }
+    case "mmVerify": {
+      a.disabled = true; const old = a.textContent; a.textContent = "Vérification…";
+      try { const r = await httpsCallable(fns, "verifierPaiement")({ id }); const st = r.data && r.data.statut; toast(st === "paye" ? "Paiement reçu ✓" : st === "echoue" ? "Paiement non validé" : "Toujours en attente de validation sur le téléphone"); }
+      catch (err) { toast(fnErr(err)); }
+      a.disabled = false; a.textContent = old; break;
+    }
+    case "mmToggle": {
+      const on = !S.config.paiementEnLigne;
+      if (on && !S.config.cleMarchande) { toast("Enregistrez d'abord votre clé PayGate."); break; }
+      setDoc(doc(db, "config", "atelier"), { paiementEnLigne: on }, { merge: true }).then(() => toast(on ? "Paiement Mobile Money activé pour vos clients" : "Paiement Mobile Money désactivé")).catch(writeErr); break;
+    }
+    case "mmKeyDel": confirm2(async () => { try { await httpsCallable(fns, "enregistrerCleMarchand")({ token: "" }); toast("Clé supprimée, paiement désactivé"); } catch (err) { toast(fnErr(err)); } }); break;
+    case "copyCb": { try { await navigator.clipboard.writeText(CALLBACK_URL); toast("Adresse copiée"); } catch (err) { const r = document.createRange(); r.selectNodeContents($("#cbUrl")); const s = getSelection(); s.removeAllRanges(); s.addRange(r); toast("Adresse sélectionnée : copiez-la"); } break; }
     case "hideTip": try { localStorage.setItem("cicart.tipHidden", "1"); } catch (err) { } render(); break;
     case "reload": location.reload(); break;
   }
@@ -765,8 +874,29 @@ document.addEventListener("submit", async e => {
     if (!obj.nom) { toast("Indiquez le nom de l'article."); return; }
     put("stock", obj); closeSheet(); toast("Article enregistré"); return;
   }
+  if (f.id === "fMM") {
+    const btn = f.querySelector('button[type="submit"]'), err = $("#mmErr");
+    const reseau = f.dataset.net, telephone = val("mmTel").replace(/\D/g, ""), montant = +val("mmMt");
+    err.textContent = "";
+    if (!reseau) { err.textContent = "Choisissez Mixx by Yas ou Moov Money."; return; }
+    if (!/^[279]\d{7}$/.test(telephone.replace(/^228/, ""))) { err.textContent = "Indiquez un numéro à 8 chiffres, par exemple 90 12 34 56."; return; }
+    if (!(montant >= 100)) { err.textContent = "Le montant minimum est de 100 F."; return; }
+    if (!navigator.onLine) { err.textContent = "Il faut une connexion Internet pour payer."; return; }
+    btn.disabled = true; btn.textContent = "Envoi de la demande…";
+    try {
+      const r = await httpsCallable(fns, "initierPaiement")({ commandeId: f.dataset.cmd, montant, reseau, telephone });
+      sheetMMWait(r.data.id, { montant, reseau, telephone: telephone.replace(/^228/, "") });
+    } catch (e2) { err.textContent = fnErr(e2); btn.disabled = false; btn.textContent = "Envoyer la demande de paiement"; }
+    return;
+  }
+  if (f.id === "fKey") {
+    const btn = f.querySelector('button[type="submit"]'); btn.disabled = true;
+    try { await httpsCallable(fns, "enregistrerCleMarchand")({ token: val("mmKey") }); toast("Clé PayGate enregistrée sur le serveur"); $("#mmKey").value = ""; }
+    catch (e2) { toast(fnErr(e2)); }
+    btn.disabled = false; return;
+  }
   if (f.id === "fCfg") {
-    setDoc(doc(db, "config", "atelier"), { nom: val("cfgNom"), tel: val("cfgTel"), tailleurs: val("cfgTail").split(",").map(s => s.trim()).filter(Boolean) }).catch(writeErr);
+    setDoc(doc(db, "config", "atelier"), { nom: val("cfgNom"), tel: val("cfgTel"), tailleurs: val("cfgTail").split(",").map(s => s.trim()).filter(Boolean) }, { merge: true }).catch(writeErr);
     toast("Réglages enregistrés");
   }
 });
