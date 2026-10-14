@@ -1,0 +1,17 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+{%- if page.title %}{% assign t = page.title | append: " · " | append: site.title %}{% else %}{% assign t = site.title %}{% endif %}
+{%- if page.resume %}{% assign d = page.resume %}{% elsif page.excerpt %}{% assign d = page.excerpt | strip_html | strip_newlines | truncate: 160 %}{% else %}{% assign d = site.description %}{% endif %}
+{%- if page.image %}{% assign img = page.image %}{% else %}{% assign img = "/assets/img/hero.jpg" %}{% endif %}
+<title>{{ t }}</title>
+<meta name="description" content="{{ d | escape }}">
+<meta property="og:title" content="{{ t | escape }}">
+<meta property="og:description" content="{{ d | escape }}">
+<meta property="og:image" content="{{ img | absolute_url }}">
+<meta property="og:url" content="{{ page.url | absolute_url }}">
+<meta property="og:type" content="{% if page.layout == 'post' %}article{% else %}website{% endif %}">
+<link rel="icon" href="{{ '/assets/img/favicon.png' | relative_url }}">
+<link rel="alternate" type="application/atom+xml" title="Blog de Narcisse Etsinyo" href="{{ '/blog/feed.xml' | relative_url }}">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=Manrope:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="{{ '/assets/css/site.css' | relative_url }}">

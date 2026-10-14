@@ -1,0 +1,11 @@
+{%- assign date_fr = post.date -%}
+<a class="post-card" href="{{ post.url | relative_url }}" data-cat="{{ post.categorie | default: 'Actualités' }}">
+  <div class="post-cover">
+    {%- if post.image %}<img src="{{ post.image | relative_url }}" alt="" loading="lazy">{% else %}<span class="initial">{{ post.title | slice: 0 }}</span>{% endif -%}
+  </div>
+  <div class="post-body">
+    <div class="post-meta"><span class="chip">{{ post.categorie | default: "Actualités" }}</span><time datetime="{{ post.date | date: '%Y-%m-%d' }}">{% include date-fr.html %}</time></div>
+    <h3>{{ post.title }}</h3>
+    <p>{% if post.resume %}{{ post.resume }}{% else %}{{ post.excerpt | strip_html | truncatewords: 26 }}{% endif %}</p>
+  </div>
+</a>

@@ -1,0 +1,15 @@
+title: Narcisse Etsinyo
+description: Narcisse Etsinyo, assistant de direction, communicant, photographe et graphiste à Lomé, Togo.
+url: https://narcisseetsinyo-cmd.github.io
+baseurl: ""
+lang: fr
+timezone: Africa/Lome
+permalink: /blog/:year/:title/
+markdown: kramdown
+plugins:
+  - jekyll-feed
+feed:
+  path: blog/feed.xml
+exclude:
+  - README.md
+  - PUBLIER-UN-ARTICLE.md

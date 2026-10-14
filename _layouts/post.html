@@ -1,0 +1,32 @@
+---
+layout: default
+---
+{%- assign date_fr = page.date -%}
+{%- assign words = content | number_of_words -%}
+{%- assign minutes = words | divided_by: 200 | plus: 1 -%}
+{%- assign full = page.url | absolute_url -%}
+<article class="article">
+  <div class="wrap">
+    <a class="back" href="{{ '/blog/' | relative_url }}">← Tous les articles</a>
+    <h1>{{ page.title }}</h1>
+    <div class="post-meta"><span class="chip">{{ page.categorie | default: "Actualités" }}</span><time datetime="{{ page.date | date: '%Y-%m-%d' }}">{% include date-fr.html %}</time><span>{{ minutes }} min de lecture</span></div>
+    {%- if page.image %}
+    <figure class="article-cover"><img src="{{ page.image | relative_url }}" alt="{{ page.legende | default: page.title | escape }}"></figure>
+    {%- endif %}
+    <div class="prose">
+{{ content }}
+    </div>
+    <div class="share">
+      <span>Partager</span>
+      <a class="wa" href="https://wa.me/?text={{ page.title | append: ' ' | append: full | url_encode }}" target="_blank" rel="noopener">WhatsApp</a>
+      <a href="https://www.facebook.com/sharer/sharer.php?u={{ full | url_encode }}" target="_blank" rel="noopener">Facebook</a>
+      <a href="https://www.linkedin.com/sharing/share-offsite/?url={{ full | url_encode }}" target="_blank" rel="noopener">LinkedIn</a>
+    </div>
+    {%- if page.previous or page.next %}
+    <nav class="post-nav" aria-label="Autres articles">
+      {%- if page.previous %}<a href="{{ page.previous.url | relative_url }}"><small>Article précédent</small><b>{{ page.previous.title }}</b></a>{% endif %}
+      {%- if page.next %}<a class="next" href="{{ page.next.url | relative_url }}"><small>Article suivant</small><b>{{ page.next.title }}</b></a>{% endif %}
+    </nav>
+    {%- endif %}
+  </div>
+</article>

@@ -1,0 +1,32 @@
+---
+layout: default
+title: Blog
+resume: Articles de Narcisse Etsinyo sur la photographie, le graphisme, la communication et l'actualité.
+---
+<header class="page-head">
+  <div class="wrap">
+    <span class="eyebrow">Blog</span>
+    <h1>Mes <em>articles</em></h1>
+    <p class="lede">Photographie, graphisme, communication et actualités. Mes réalisations et ce que j'apprends en chemin.</p>
+  </div>
+</header>
+<section class="blog-list">
+  <div class="wrap">
+    {%- assign cats = site.posts | map: "categorie" | compact | uniq | sort -%}
+    {%- if cats.size > 1 %}
+    <div class="filters" id="filters" role="group" aria-label="Filtrer par catégorie">
+      <button type="button" data-filter="*" aria-pressed="true">Tous</button>
+      {%- for c in cats %}<button type="button" data-filter="{{ c }}" aria-pressed="false">{{ c }}</button>{% endfor %}
+    </div>
+    {%- endif %}
+    {%- if site.posts.size > 0 %}
+    <div class="posts">
+      {%- for post in site.posts %}
+      {% include post-card.html %}
+      {%- endfor %}
+    </div>
+    {%- else %}
+    <p class="blog-empty">Les premiers articles arrivent bientôt.</p>
+    {%- endif %}
+  </div>
+</section>
