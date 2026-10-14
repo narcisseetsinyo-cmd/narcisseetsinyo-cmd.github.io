@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#09132d">
+<meta name="description" content="Installez CIC'ART sur votre téléphone Android, iPhone, ordinateur Windows ou Mac.">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="CIC'ART">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<title>Installer CIC'ART</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,800&family=Manrope:wght@400;500;600;700&display=swap">
+<style>
+/* Une colonne : en-tête, bouton d'installation, onglets par appareil, étapes numérotées. */
+:root{
+  --bg:#09132d; --surface:#0f1d44; --surface-2:#142553; --line:#22336a; --line-soft:#1a2a59;
+  --fg:#eef3ff; --muted:#9ba9cc; --label:#9fc0f6;
+  --blue:#3d7af5; --red:#d23c3c; --green:#8cc152; --green-ink:#14260a; --amber:#f0b44c;
+  --f-display:"Bricolage Grotesque","Manrope",system-ui,sans-serif;
+  --f-body:"Manrope",system-ui,-apple-system,"Segoe UI",sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.55 var(--f-body);
+  background-image:radial-gradient(900px 600px at 85% 85%,rgba(45,95,200,.3),transparent 60%),radial-gradient(700px 500px at 10% 0%,rgba(30,60,140,.25),transparent 60%);background-attachment:fixed;
+  padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+.wrap{max-width:760px;margin:0 auto;padding-inline:16px;padding-block:28px 56px;display:flex;flex-direction:column;gap:26px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-bottom:18px;border-bottom:1px solid var(--line-soft)}
+.brand{display:flex;align-items:center;gap:12px}
+.mark{width:44px;height:44px;border-radius:50%;background:var(--red);display:grid;place-items:center;font:800 16px var(--f-display);color:#fff;flex:none}
+.brand b{font:800 22px var(--f-display);letter-spacing:-.02em}
+.eyebrow{display:flex;align-items:center;gap:14px;color:var(--label);font-weight:700;font-size:12px;letter-spacing:.2em;text-transform:uppercase}
+.eyebrow::before{content:"";width:34px;height:2px;background:var(--red);flex:none}
+h1{font:800 clamp(34px,7vw,54px)/1 var(--f-display);letter-spacing:-.035em;margin:12px 0 8px;text-wrap:balance}
+h1 em{font-style:normal;color:var(--blue)}
+.lede{color:var(--muted);margin:0;max-width:58ch}
+.lede b{color:var(--fg)}
+.btn{all:unset;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:10px;padding:14px 24px;border-radius:14px;font-weight:700;background:var(--blue);color:#fff;box-shadow:0 10px 28px -12px rgba(61,122,245,.9)}
+.btn.green{background:var(--green);color:var(--green-ink);border-radius:999px;box-shadow:none}
+.btn.ghost{background:transparent;box-shadow:inset 0 0 0 1.5px var(--line);color:var(--fg)}
+.btn svg{width:20px;height:20px}
+.hero-act{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+.status{display:flex;gap:12px;align-items:center;padding:14px 16px;border-radius:14px;background:rgba(140,193,82,.14);color:var(--green);font-weight:600}
+.tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;background:rgba(12,24,56,.7);border:1px solid var(--line-soft);border-radius:16px;padding:6px}
+.tab{all:unset;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 4px;border-radius:11px;color:var(--muted);font-weight:700;font-size:13px;text-align:center}
+.tab svg{width:24px;height:24px}
+.tab[aria-selected="true"]{background:var(--fg);color:var(--bg)}
+.tab small{font-weight:600;font-size:10.5px;opacity:.75}
+.panel{background:linear-gradient(180deg,rgba(20,37,83,.75),rgba(15,29,68,.75));border:1px solid var(--line-soft);border-radius:20px;padding:20px;display:flex;flex-direction:column;gap:16px}
+.panel h2{font:800 22px var(--f-display);letter-spacing:-.02em;margin:0}
+.panel .sub{color:var(--muted);margin:-8px 0 0;font-size:14px}
+ol.steps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px;counter-reset:s}
+ol.steps li{counter-increment:s;display:grid;grid-template-columns:32px 1fr;gap:12px;align-items:start;padding:12px;border-radius:14px;background:var(--surface);border:1px solid var(--line-soft)}
+ol.steps li::before{content:counter(s);width:30px;height:30px;border-radius:50%;background:var(--blue);display:grid;place-items:center;font-weight:800;font-size:14px}
+ol.steps li span{padding-top:4px;min-width:0}
+.ico{display:inline-grid;place-items:center;vertical-align:-4px;width:24px;height:22px;border-radius:6px;background:var(--bg);border:1px solid var(--line);margin-inline:2px}
+.ico svg{width:15px;height:15px}
+kbd{font:600 12.5px ui-monospace,Menlo,monospace;background:var(--bg);border:1px solid var(--line);border-bottom-width:2px;border-radius:6px;padding:1px 6px}
+.tip{font-size:14px;color:var(--muted);margin:0;padding:12px 14px;border-left:3px solid var(--amber);background:rgba(240,180,76,.08);border-radius:0 12px 12px 0}
+.tip b{color:var(--fg)}
+.after{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.after div{padding:14px;border-radius:14px;border:1px solid var(--line-soft);background:rgba(12,24,56,.6)}
+.after b{display:block;margin-bottom:2px}
+.after span{color:var(--muted);font-size:13.5px}
+.link{text-align:center;color:var(--muted);font-size:14px}
+.link a{color:var(--label);font-weight:700}
+@media (max-width:620px){.after{grid-template-columns:1fr}.tab{font-size:12px}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand"><div class="mark">CA</div><b>CIC'ART</b></div>
+    <a class="btn green" href="./" style="padding:10px 18px">Ouvrir l'application</a>
+  </header>
+
+  <section>
+    <div class="eyebrow">Installation</div>
+    <h1>CIC'ART sur <em>tous vos écrans</em>.</h1>
+    <p class="lede">Une seule application pour <b>Android, iPhone, Windows et Mac</b>. Elle s'ouvre depuis son icône, en plein écran, et vos données restent synchronisées entre tous vos appareils.</p>
+  </section>
+
+  <div id="installed" class="status" hidden>✓ CIC'ART est déjà installée sur cet appareil.</div>
+  <div class="hero-act" id="oneClick" hidden>
+    <button class="btn" id="installBtn" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg>Installer CIC'ART</button>
+    <span class="lede" style="font-size:14px">Un clic, puis confirmez.</span>
+  </div>
+
+  <div class="tabs" role="tablist" aria-label="Choisissez votre appareil">
+    <button class="tab" role="tab" id="t-android" aria-controls="p-android" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2" width="12" height="20" rx="2.5"/><path d="M11 18h2"/></svg>Android<small>Chrome</small></button>
+    <button class="tab" role="tab" id="t-ios" aria-controls="p-ios" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2" width="12" height="20" rx="3"/><path d="M10 4.5h4"/></svg>iPhone<small>Safari</small></button>
+    <button class="tab" role="tab" id="t-win" aria-controls="p-win" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg>Windows<small>Edge ou Chrome</small></button>
+    <button class="tab" role="tab" id="t-mac" aria-controls="p-mac" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v11H4z"/><path d="M2 19h20"/></svg>Mac<small>Safari ou Chrome</small></button>
+  </div>
+
+  <section class="panel" role="tabpanel" id="p-android" aria-labelledby="t-android" hidden>
+    <h2>Téléphone ou tablette Android</h2>
+    <p class="sub">Avec Google Chrome, installé sur presque tous les téléphones Android.</p>
+    <ol class="steps">
+      <li><span>Ouvrez <b>narcisseetsinyo-cmd.github.io/cicart</b> dans <b>Chrome</b>.</span></li>
+      <li><span>Touchez le bouton <b>Installer</b> qui apparaît dans l'application ou en bas de l'écran. Sinon, touchez le menu <span class="ico">⋮</span> en haut à droite.</span></li>
+      <li><span>Choisissez <b>« Installer l'application »</b> (ou « Ajouter à l'écran d'accueil »), puis <b>Installer</b>.</span></li>
+      <li><span>L'icône rouge <b>CA</b> apparaît sur l'écran d'accueil et dans la liste des applications.</span></li>
+    </ol>
+    <p class="tip">Sur un téléphone Samsung, le navigateur <b>Samsung Internet</b> fonctionne aussi : menu <span class="ico">≡</span> puis <b>« Ajouter la page à »</b> et <b>« Écran d'accueil »</b>.</p>
+  </section>
+
+  <section class="panel" role="tabpanel" id="p-ios" aria-labelledby="t-ios" hidden>
+    <h2>iPhone ou iPad</h2>
+    <p class="sub">Apple n'autorise l'installation qu'à partir du bouton Partager.</p>
+    <ol class="steps">
+      <li><span>Ouvrez <b>narcisseetsinyo-cmd.github.io/cicart</b> dans <b>Safari</b>.</span></li>
+      <li><span>Touchez le bouton <b>Partager</b> <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3M8 7l4-4 4 4"/><path d="M6 11H5v10h14V11h-1"/></svg></span> en bas de l'écran (en haut sur iPad).</span></li>
+      <li><span>Faites défiler et touchez <b>« Sur l'écran d'accueil »</b>.</span></li>
+      <li><span>Vérifiez que le nom est <b>CIC'ART</b> et que <b>« Ouvrir comme app web »</b> est activé si l'option apparaît, puis touchez <b>Ajouter</b>.</span></li>
+    </ol>
+    <p class="tip">Avec iOS 16.4 ou plus récent, Chrome sur iPhone le permet aussi via son bouton <b>Partager</b>. Pour la connexion Google dans l'application installée, utilisez de préférence l'<b>e-mail et le mot de passe</b> si la fenêtre Google ne s'ouvre pas.</p>
+  </section>
+
+  <section class="panel" role="tabpanel" id="p-win" aria-labelledby="t-win" hidden>
+    <h2>Ordinateur Windows</h2>
+    <p class="sub">Avec Microsoft Edge (déjà présent sur Windows) ou Google Chrome.</p>
+    <ol class="steps">
+      <li><span>Ouvrez <b>narcisseetsinyo-cmd.github.io/cicart</b> dans <b>Edge</b> ou <b>Chrome</b>.</span></li>
+      <li><span>Cliquez sur l'icône d'installation <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M12 8v6M9 11h6"/></svg></span> à droite de la barre d'adresse, ou sur le bouton <b>Installer CIC'ART</b> de cette page.</span></li>
+      <li><span>Dans Edge sans icône visible : menu <span class="ico">…</span>, puis <b>Applications</b>, puis <b>« Installer ce site en tant qu'application »</b>.</span></li>
+      <li><span>Confirmez avec <b>Installer</b>. CIC'ART s'ouvre dans sa propre fenêtre et apparaît dans le <b>menu Démarrer</b>. Vous pouvez l'<b>épingler à la barre des tâches</b> (clic droit sur son icône).</span></li>
+    </ol>
+  </section>
+
+  <section class="panel" role="tabpanel" id="p-mac" aria-labelledby="t-mac" hidden>
+    <h2>Ordinateur Mac</h2>
+    <p class="sub">Avec Safari (macOS Sonoma 14 ou plus récent) ou Google Chrome.</p>
+    <ol class="steps">
+      <li><span>Ouvrez <b>narcisseetsinyo-cmd.github.io/cicart</b>.</span></li>
+      <li><span><b>Dans Safari</b> : menu <b>Fichier</b>, puis <b>« Ajouter au Dock… »</b>, puis <b>Ajouter</b>.</span></li>
+      <li><span><b>Dans Chrome</b> : cliquez sur l'icône d'installation <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M12 8v6M9 11h6"/></svg></span> dans la barre d'adresse, ou sur le bouton <b>Installer CIC'ART</b> de cette page.</span></li>
+      <li><span>CIC'ART apparaît dans le <b>Dock</b> et dans le dossier <b>Applications</b>, et s'ouvre dans sa propre fenêtre.</span></li>
+    </ol>
+    <p class="tip">Sur un Mac plus ancien que Sonoma, utilisez <b>Chrome</b> : Safari n'y propose pas « Ajouter au Dock ».</p>
+  </section>
+
+  <section>
+    <div class="eyebrow" style="margin-bottom:12px">Une fois installée</div>
+    <div class="after">
+      <div><b>Mises à jour automatiques</b><span>Rien à télécharger : un bandeau propose « Mettre à jour » quand une nouvelle version sort.</span></div>
+      <div><b>Fonctionne sans réseau</b><span>Vos modifications partent dès que la connexion revient.</span></div>
+      <div><b>Mêmes données partout</b><span>Connectez-vous avec le même compte sur chaque appareil.</span></div>
+    </div>
+  </section>
+
+  <p class="link">Pour partager cette page : <b style="user-select:all;color:var(--fg)">narcisseetsinyo-cmd.github.io/cicart/installer.html</b></p>
+</div>
+
+<script>
+(function(){
+  const ua=navigator.userAgent||"";
+  const isIOS=/iphone|ipad|ipod/i.test(ua)||(/Macintosh/.test(ua)&&navigator.maxTouchPoints>1);
+  const isAndroid=/android/i.test(ua);
+  const isWin=/windows/i.test(ua);
+  const isMac=/Macintosh/.test(ua)&&!isIOS;
+  const detected=isIOS?"ios":isAndroid?"android":isWin?"win":isMac?"mac":"android";
+  const tabs=[...document.querySelectorAll(".tab")];
+  function select(key){
+    tabs.forEach(t=>{const on=t.id==="t-"+key;t.setAttribute("aria-selected",on);t.tabIndex=on?0:-1;document.getElementById(t.getAttribute("aria-controls")).hidden=!on;});
+  }
+  tabs.forEach((t,i)=>{
+    t.addEventListener("click",()=>select(t.id.slice(2)));
+    t.addEventListener("keydown",e=>{if(e.key==="ArrowRight"||e.key==="ArrowLeft"){const n=tabs[(i+(e.key==="ArrowRight"?1:tabs.length-1))%tabs.length];n.focus();select(n.id.slice(2));}});
+  });
+  select(detected);
+  const standalone=(()=>{try{return matchMedia("(display-mode: standalone)").matches||navigator.standalone===true;}catch(e){return false;}})();
+  if(standalone)document.getElementById("installed").hidden=false;
+  let deferred=null;
+  window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();deferred=e;document.getElementById("oneClick").hidden=false;});
+  window.addEventListener("appinstalled",()=>{deferred=null;document.getElementById("oneClick").hidden=true;document.getElementById("installed").hidden=false;});
+  document.getElementById("installBtn").addEventListener("click",async()=>{if(!deferred)return;deferred.prompt();try{await deferred.userChoice;}catch(e){}deferred=null;document.getElementById("oneClick").hidden=true;});
+  if("serviceWorker" in navigator){navigator.serviceWorker.register("sw.js").catch(()=>{});}
+})();
+</script>
+</body>
+</html>

@@ -232,6 +232,7 @@ function vAuth() {
     ${signup || reset ? `<button class="linkish" data-auth="login">J'ai déjà un compte</button>` : `<button class="linkish" data-auth="signup">Créer un compte</button><button class="linkish" data-auth="reset">Mot de passe oublié ?</button>`}
   </div></div>
   <p class="muted" style="font-size:13px;margin:0">Client de l'atelier ? Créez votre compte, puis saisissez le code client que l'atelier vous a remis.</p>
+  ${isStandalone() ? "" : `<a class="linkish" href="installer.html">Installer CIC'ART sur ce téléphone ou cet ordinateur</a>`}
   </div></div>`;
 }
 function authMsg(e) {
@@ -462,7 +463,7 @@ function vCompte() {
   ${S.role === "client" && p.code ? `<p class="muted">Code client : <span class="code">${esc(p.code)}</span></p>` : ""}</section>
   <section class="panel span-6"><div class="panel-head"><h3>L'atelier</h3></div>
   <dl class="kv"><dt>Atelier</dt><dd>${esc(S.config.nom || "CIC'ART")}</dd><dt>Téléphone</dt><dd class="num">${S.config.tel ? `<span style="user-select:all">${esc(S.config.tel)}</span>` : "—"}</dd>${cl && cl.tel ? `<dt>Votre numéro</dt><dd class="num">${esc(cl.tel)}</dd>` : ""}</dl>
-  <div class="actions" style="margin-top:18px"><button class="btn ghost" data-act="logout">Se déconnecter</button></div></section></div>`;
+  <div class="actions" style="margin-top:18px"><a class="btn ghost" href="installer.html">Installer sur un appareil</a><button class="btn ghost" data-act="logout">Se déconnecter</button></div></section></div>`;
 }
 
 /* ================= Vues client ================= */
@@ -617,8 +618,10 @@ function installTip() {
   if (isStandalone() || !["dash", "mescmd"].includes(page)) return "";
   try { if (localStorage.getItem("cicart.tipHidden")) return ""; } catch (e) { }
   if (deferredPrompt) return `<div class="install-tip"><p>Installez CIC'ART sur cet appareil pour l'ouvrir comme une application.</p><div class="actions"><button class="btn sm" data-act="install">Installer</button><button class="btn sm ghost" data-act="hideTip">Plus tard</button></div></div>`;
-  if (/iphone|ipad|ipod/i.test(navigator.userAgent)) return `<div class="install-tip"><p>Pour installer CIC'ART : touchez <b>Partager</b> dans Safari, puis <b>« Sur l'écran d'accueil »</b>.</p><button class="btn sm ghost" data-act="hideTip">Compris</button></div>`;
-  return "";
+  const ua = navigator.userAgent;
+  if (/iphone|ipad|ipod/i.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1)) return `<div class="install-tip"><p>Pour installer CIC'ART : touchez <b>Partager</b> dans Safari, puis <b>« Sur l'écran d'accueil »</b>.</p><button class="btn sm ghost" data-act="hideTip">Compris</button></div>`;
+  if (/Macintosh/.test(ua) && /Safari/.test(ua) && !/Chrome|Chromium|Edg/.test(ua)) return `<div class="install-tip"><p>Pour installer CIC'ART sur ce Mac : menu <b>Fichier</b>, puis <b>« Ajouter au Dock… »</b>.</p><div class="actions"><a class="btn sm ghost" href="installer.html">Aide</a><button class="btn sm ghost" data-act="hideTip">Compris</button></div></div>`;
+  return `<div class="install-tip"><p>Installez CIC'ART sur cet appareil pour l'ouvrir depuis son icône.</p><div class="actions"><a class="btn sm" href="installer.html">Comment installer</a><button class="btn sm ghost" data-act="hideTip">Plus tard</button></div></div>`;
 }
 window.addEventListener("beforeinstallprompt", e => { e.preventDefault(); deferredPrompt = e; render(); });
 window.addEventListener("appinstalled", () => { deferredPrompt = null; toast("CIC'ART est installée"); render(); });

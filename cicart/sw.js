@@ -1,8 +1,9 @@
 /* CIC'ART — service hors ligne. Changez VERSION à chaque mise à jour de l'application. */
-const VERSION = "cicart-fb-v1";
+const VERSION = "cicart-fb-v2";
 const SHELL = [
   "./",
   "./index.html",
+  "./installer.html",
   "./app.js",
   "./firebase-config.js",
   "./manifest.webmanifest",
